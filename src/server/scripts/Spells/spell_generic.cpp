@@ -4319,6 +4319,51 @@ class spell_gen_cannon_blast : public SpellScript
     }
 };
 
+enum GoingApe
+{
+    SPELL_GOING_APE = 48332,
+    SPELL_GOING_APE_AURA = 48333
+};
+
+// 48332 - Going Ape
+class spell_gen_going_ape : public AuraScript
+{
+    PrepareAuraScript(spell_gen_going_ape);
+
+    bool Validate(SpellInfo const* /*spellInfo*/) override
+    {
+        return ValidateSpellInfo({ SPELL_GOING_APE, SPELL_GOING_APE_AURA });
+    }
+
+    void OnApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+    {
+        // Remove all auras with spell id 46221, except the one currently being applied
+        // while (Aura* aur = GetUnitOwner()->GetOwnedAura(SPELL_ANIMAL_BLOOD, ObjectGuid::Empty, ObjectGuid::Empty, 0, GetAura()))
+        //     GetUnitOwner()->RemoveOwnedAura(aur);
+    }
+
+    void OnRemove(AuraEffect const* aurEff, AuraEffectHandleModes /*mode*/)
+    {
+        if (Unit* caster = GetCaster())
+        {
+            switch (aurEff->GetId())
+            {
+                case SPELL_GOING_APE_AURA:
+                    caster->RemoveAura(SPELL_GOING_APE);
+                    break;
+                case SPELL_GOING_APE:
+                    caster->RemoveAura(SPELL_GOING_APE_AURA);
+                    break;
+            }
+        }
+    }
+
+    void Register() override
+    {
+        AfterEffectRemove += AuraEffectRemoveFn(spell_gen_going_ape::OnRemove, EFFECT_0, SPELL_AURA_ANY, AURA_EFFECT_HANDLE_REAL);
+    }
+};
+
 void AddSC_generic_spell_scripts()
 {
     RegisterSpellScript(spell_gen_absorb0_hitlimit1);
@@ -4451,4 +4496,5 @@ void AddSC_generic_spell_scripts()
     RegisterSpellScript(spell_freezing_circle);
     RegisterSpellScript(spell_gen_charmed_unit_spell_cooldown);
     RegisterSpellScript(spell_gen_cannon_blast);
+    RegisterSpellScript(spell_gen_going_ape);
 }

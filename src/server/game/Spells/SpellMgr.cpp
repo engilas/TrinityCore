@@ -4701,6 +4701,12 @@ void SpellMgr::LoadSpellInfoCorrections()
         spellInfo->AuraInterruptFlags |= AURA_INTERRUPT_FLAG_CAST | AURA_INTERRUPT_FLAG_MOVE | AURA_INTERRUPT_FLAG_JUMP;
     });
 
+    // Going Ape
+    ApplySpellFix({ 48332 }, [](SpellInfo* spellInfo)
+    {
+        spellInfo->AuraInterruptFlags &= ~AURA_INTERRUPT_FLAG_CHANGE_MAP;
+    });
+
     //
     // ISLE OF CONQUEST SPELLS
     //
