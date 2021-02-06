@@ -1928,9 +1928,6 @@ void Pet::CastPetAura(PetAura const* aura)
     CastSpellExtraArgs args;
     args.TriggerFlags = TRIGGERED_FULL_MASK;
 
-    if (auraId == 35696)                                      // Demonic Knowledge
-        args.AddSpellMod(SPELLVALUE_BASE_POINT0, CalculatePct(aura->GetDamage(), GetStat(STAT_STAMINA) + GetStat(STAT_INTELLECT)));
-
     CastSpell(this, auraId, args);
 }
 

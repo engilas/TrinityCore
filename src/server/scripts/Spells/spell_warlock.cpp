@@ -29,6 +29,7 @@
 #include "Optional.h"
 #include "Player.h"
 #include "Random.h"
+#include "Spell.h"
 #include "SpellAuraEffects.h"
 #include "SpellMgr.h"
 #include "SpellScript.h"
@@ -86,7 +87,11 @@ enum WarlockSpells
     SPELL_WARLOCK_FLAMESHADOW                       = 37379,
     SPELL_WARLOCK_GLYPH_OF_SUCCUBUS                 = 56250,
     SPELL_WARLOCK_IMPROVED_DRAIN_SOUL_R1            = 18213,
-    SPELL_WARLOCK_IMPROVED_DRAIN_SOUL_PROC          = 18371
+    SPELL_WARLOCK_IMPROVED_DRAIN_SOUL_PROC          = 18371,
+    SPELL_WARLOCK_DEMONIC_KNOWLEDGE_R1              = 35691,
+    SPELL_WARLOCK_DEMONIC_KNOWLEDGE_AURA            = 35696,
+    SPELL_WARLOCK_SOUL_LINK                         = 19028,
+    SPELL_WARLOCK_SOUL_LINK_AURA                    = 25228
 };
 
 enum WarlockSpellIcons
@@ -1572,6 +1577,179 @@ class spell_warl_unstable_affliction : public SpellScriptLoader
         }
 };
 
+// 35696 - Demonic Knowledge
+class spell_warl_demonic_knowledge : public SpellScriptLoader
+{
+public:
+    spell_warl_demonic_knowledge() : SpellScriptLoader("spell_warl_demonic_knowledge") { }
+
+    class spell_warl_demonic_knowledge_SpellScript : public SpellScript
+    {
+        PrepareSpellScript(spell_warl_demonic_knowledge_SpellScript);
+
+        void ModifyAttack()
+        {
+            if (Unit* caster = GetCaster())
+            {
+                int32 damage = GetSpellInfo()->Effects[EFFECT_0].CalcValue();
+                float stats = caster->GetStat(STAT_STAMINA) + caster->GetStat(STAT_INTELLECT);
+                if (stats == 0 && caster->IsCharmedWarlockDemon()) // enslaved demon hasn't stats
+                {
+                    if (Unit* charmer = caster->GetCharmer())
+                    {
+                        // calculate from base stats
+                        stats += 25 + CalculatePct(charmer->GetStat(STAT_STAMINA), 75);
+                        stats += 28 + CalculatePct(charmer->GetStat(STAT_INTELLECT), 30);
+                    }
+                }
+                GetSpell()->SetSpellValue(SPELLVALUE_BASE_POINT0, CalculatePct(damage, stats));
+            }
+        }
+
+        void Register() override
+        {
+            BeforeCast += SpellCastFn(spell_warl_demonic_knowledge_SpellScript::ModifyAttack);
+        }
+    };
+
+    SpellScript* GetSpellScript() const override
+    {
+        return new spell_warl_demonic_knowledge_SpellScript();
+    }
+};
+
+// Template for apply aura on enslaved demons and guards (infernal)
+class spell_warl_apply_aura_SpellScript : public SpellScript
+{
+public:
+    PrepareSpellScript(spell_warl_apply_aura_SpellScript);
+
+    spell_warl_apply_aura_SpellScript(uint32 spellId, uint32 auraId) : m_spellId(spellId), m_auraId(auraId)
+    {
+    }
+
+    bool Validate(SpellInfo const* /*spellInfo*/) override
+    {
+        return ValidateSpellInfo({
+            m_spellId,
+            m_auraId
+        });
+    }
+
+    // apply aura on enslaved demons and guards
+    static void CastAura(Unit* caster, uint32 spellId, uint32 auraId)
+    {
+        if (!caster)
+            return;
+
+        CastSpellExtraArgs args;
+        args.TriggerFlags = TRIGGERED_FULL_MASK;
+
+        if (spellId == 0 || caster->GetAuraApplicationOfRankedSpell(spellId))
+        {
+            if (Guardian* guard = caster->GetGuardianPet())
+            {
+                if (!guard->IsPet())
+                {
+                    guard->CastSpell(guard, auraId, args);
+                }
+            }
+            else if (Unit* charmed = caster->GetCharmed())
+            {
+                if (charmed->IsCharmedWarlockDemon())
+                {
+                    charmed->CastSpell(charmed, auraId, args);
+                }
+            }
+        }
+    }
+
+    void CastAura()
+    {
+        CastAura(GetCaster(), m_spellId, m_auraId);
+    }
+
+    void Register() override
+    {
+        AfterCast += SpellCastFn(spell_warl_apply_aura_SpellScript::CastAura);
+    }
+
+private:
+    uint32 m_spellId;
+    uint32 m_auraId;
+};
+
+// 1122 - Inferno
+class spell_warl_inferno : public SpellScriptLoader
+{
+public:
+    spell_warl_inferno() : SpellScriptLoader("spell_warl_inferno") { }
+
+    SpellScript* GetSpellScript() const override
+    {
+        return new spell_warl_apply_aura_SpellScript(SPELL_WARLOCK_DEMONIC_KNOWLEDGE_R1, SPELL_WARLOCK_DEMONIC_KNOWLEDGE_AURA);
+    }
+};
+
+// 1098 - Enslave Demon
+class spell_warl_enslave_demon : public SpellScriptLoader
+{
+public:
+    spell_warl_enslave_demon() : SpellScriptLoader("spell_warl_enslave_demon") { }
+
+    SpellScript* GetSpellScript() const override
+    {
+        return new spell_warl_apply_aura_SpellScript(SPELL_WARLOCK_DEMONIC_KNOWLEDGE_R1, SPELL_WARLOCK_DEMONIC_KNOWLEDGE_AURA);
+    }
+};
+
+// 60478 - Ritual of Doom Effect (summon)
+class spell_warl_ritual_of_doom_effect_summon : public SpellScriptLoader
+{
+public:
+    spell_warl_ritual_of_doom_effect_summon() : SpellScriptLoader("spell_warl_ritual_of_doom_effect_summon") { }
+
+    SpellScript* GetSpellScript() const override
+    {
+        return new spell_warl_apply_aura_SpellScript(SPELL_WARLOCK_DEMONIC_KNOWLEDGE_R1, SPELL_WARLOCK_DEMONIC_KNOWLEDGE_AURA);
+    }
+};
+
+// 19028 - Soul Link
+// apply aura on enslaved demons
+class spell_warl_soul_link : public SpellScript
+{
+    PrepareSpellScript(spell_warl_soul_link);
+
+    void SelectTarget(WorldObject*& target)
+    {
+        if (target == nullptr)
+        {
+            if (Unit* caster = GetCaster())
+            {
+                if (Unit* charmed = caster->GetCharmed())
+                {
+                    if (charmed->IsCharmedWarlockDemon())
+                    {
+                        target = charmed;
+                    }
+                }
+            }
+        }
+    }
+
+    void CastAuraOnGuardsAndSlaves()
+    {
+        spell_warl_apply_aura_SpellScript::CastAura(GetCaster(), 0, SPELL_WARLOCK_SOUL_LINK_AURA);
+    }
+
+    void Register() override
+    {
+        OnObjectTargetSelect += SpellObjectTargetSelectFn(spell_warl_soul_link::SelectTarget, EFFECT_0, TARGET_UNIT_PET);
+        OnCast += SpellCastFn(spell_warl_soul_link::CastAuraOnGuardsAndSlaves);
+    }
+};
+
 void AddSC_warlock_spell_scripts()
 {
     RegisterSpellScript(spell_warl_curse_of_agony);
@@ -1605,4 +1783,9 @@ void AddSC_warlock_spell_scripts()
     new spell_warl_t4_2p_bonus<SPELL_WARLOCK_FLAMESHADOW>("spell_warl_t4_2p_bonus_shadow");
     new spell_warl_t4_2p_bonus<SPELL_WARLOCK_SHADOWFLAME>("spell_warl_t4_2p_bonus_fire");
     new spell_warl_unstable_affliction();
+    new spell_warl_demonic_knowledge();
+    new spell_warl_inferno();
+    new spell_warl_enslave_demon();
+    new spell_warl_ritual_of_doom_effect_summon();
+    RegisterSpellScript(spell_warl_soul_link);
 }

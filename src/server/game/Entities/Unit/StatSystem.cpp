@@ -1182,7 +1182,7 @@ bool Guardian::UpdateStats(Stats stat)
     }
     else if (stat == STAT_STAMINA)
     {
-        if (owner->GetClass() == CLASS_WARLOCK && IsPet())
+        if (owner->GetClass() == CLASS_WARLOCK && IsGuardianPet())
         {
             ownersBonus = CalculatePct(owner->GetStat(STAT_STAMINA), 75);
             value += ownersBonus;
