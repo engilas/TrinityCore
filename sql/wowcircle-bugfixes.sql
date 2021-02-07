@@ -17,6 +17,7 @@ INSERT INTO spell_script_names(spell_id, ScriptName) VALUES (48332, 'spell_gen_g
 INSERT INTO spell_script_names(spell_id, ScriptName) VALUES 
     # приручение демона
     (-1098, 'spell_warl_enslave_demon'),
+    (-1098, 'spell_warl_enslave_demon_aura'),
     # инфернал
     (1122, 'spell_warl_inferno');
     # думгвард
