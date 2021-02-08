@@ -11,14 +11,10 @@ INSERT INTO spell_area(spell, area, quest_start, quest_end, aura_spell, racemask
 INSERT INTO spell_script_names(spell_id, ScriptName) VALUES (48332, 'spell_gen_going_ape');
 
 # Варлок
-# вызов Demonic Knowledge
 INSERT INTO spell_script_names(spell_id, ScriptName) VALUES 
-    # приручение демона
     (-1098, 'spell_warl_enslave_demon'),
     (-1098, 'spell_warl_enslave_demon_aura'),
-    # инфернал
-    (1122, 'spell_warl_inferno');
-    # думгвард
-    (60478, 'spell_warl_ritual_of_doom_effect_summon');
-    # soul link
-    (19028, 'spell_warl_soul_link')
+    (1122, 'spell_warl_inferno'),
+    (60478, 'spell_warl_ritual_of_doom_effect_summon'),
+    (19028, 'spell_warl_soul_link'),
+    (35696, 'spell_warl_demonic_knowledge');
