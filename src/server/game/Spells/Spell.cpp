@@ -5325,7 +5325,8 @@ SpellCastResult Spell::CheckCast(bool strict, uint32* param1 /*= nullptr*/, uint
         {
             if (m_spellInfo->Effects[j].TargetA.GetTarget() == TARGET_UNIT_PET)
             {
-                if (!unitCaster->GetGuardianPet())
+                Unit* charmed = unitCaster->GetCharmed(); // check enslaved demons
+                if (!unitCaster->GetGuardianPet() && !(charmed && charmed->IsCharmedWarlockDemon()))
                 {
                     if (m_triggeredByAuraSpell)              // not report pet not existence for triggered spells
                         return SPELL_FAILED_DONT_REPORT;

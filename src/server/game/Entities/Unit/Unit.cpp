@@ -6244,6 +6244,17 @@ void Unit::RemoveAllControlled()
         RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PET_IN_COMBAT); // m_controlled is now empty, so we know none of our minions are in combat
 }
 
+bool Unit::IsCharmedWarlockDemon() const
+{
+    if (GetTypeId() == TYPEID_UNIT && IsCharmed() && m_charmer->GetClass() == CLASS_WARLOCK)
+    {
+        CreatureTemplate const* cinfo = ToCreature()->GetCreatureTemplate();
+        if (cinfo && cinfo->type == CREATURE_TYPE_DEMON)
+            return true;
+    }
+    return false;
+}
+
 bool Unit::isPossessedByPlayer() const
 {
     return HasUnitState(UNIT_STATE_POSSESSED) && GetCharmerGUID().IsPlayer();
@@ -11589,21 +11600,17 @@ bool Unit::SetCharmedBy(Unit* charmer, CharmType type, AuraApplication const* au
                 AddUnitState(UNIT_STATE_POSSESSED);
                 break;
             case CHARM_TYPE_CHARM:
-                if (GetTypeId() == TYPEID_UNIT && charmer->GetClass() == CLASS_WARLOCK)
+                if (IsCharmedWarlockDemon())
                 {
-                    CreatureTemplate const* cinfo = ToCreature()->GetCreatureTemplate();
-                    if (cinfo && cinfo->type == CREATURE_TYPE_DEMON)
-                    {
-                        // to prevent client crash
-                        SetClass(CLASS_MAGE);
+                    // to prevent client crash
+                    SetClass(CLASS_MAGE);
 
-                        // just to enable stat window
-                        if (GetCharmInfo())
-                            GetCharmInfo()->SetPetNumber(sObjectMgr->GeneratePetNumber(), true);
+                    // just to enable stat window
+                    if (GetCharmInfo())
+                        GetCharmInfo()->SetPetNumber(sObjectMgr->GeneratePetNumber(), true);
 
-                        // if charmed two demons the same session, the 2nd gets the 1st one's name
-                        SetUInt32Value(UNIT_FIELD_PET_NAME_TIMESTAMP, uint32(GameTime::GetGameTime())); // cast can't be helped
-                    }
+                    // if charmed two demons the same session, the 2nd gets the 1st one's name
+                    SetUInt32Value(UNIT_FIELD_PET_NAME_TIMESTAMP, uint32(GameTime::GetGameTime())); // cast can't be helped
                 }
                 playerCharmer->CharmSpellInitialize();
                 break;
@@ -11670,6 +11677,8 @@ void Unit::RemoveCharmedBy(Unit* charmer)
     ASSERT(type != CHARM_TYPE_POSSESS || charmer->GetTypeId() == TYPEID_PLAYER);
     ASSERT(type != CHARM_TYPE_VEHICLE || (GetTypeId() == TYPEID_UNIT && IsVehicle()));
 
+    const bool isCharmedWarlockDemon = IsCharmedWarlockDemon();
+
     charmer->SetCharm(this, false);
 
     Player* playerCharmer = charmer->ToPlayer();
@@ -11690,17 +11699,14 @@ void Unit::RemoveCharmedBy(Unit* charmer)
                 RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_POSSESSED);
                 break;
             case CHARM_TYPE_CHARM:
-                if (GetTypeId() == TYPEID_UNIT && charmer->GetClass() == CLASS_WARLOCK)
+                if (isCharmedWarlockDemon)
                 {
                     CreatureTemplate const* cinfo = ToCreature()->GetCreatureTemplate();
-                    if (cinfo && cinfo->type == CREATURE_TYPE_DEMON)
-                    {
-                        SetClass(uint8(cinfo->unit_class));
-                        if (GetCharmInfo())
-                            GetCharmInfo()->SetPetNumber(0, true);
-                        else
-                            TC_LOG_ERROR("entities.unit", "Aura::HandleModCharm: %s has a charm aura but no charm info!", GetGUID().ToString().c_str());
-                    }
+                    SetClass(uint8(cinfo->unit_class));
+                    if (GetCharmInfo())
+                        GetCharmInfo()->SetPetNumber(0, true);
+                    else
+                        TC_LOG_ERROR("entities.unit", "Aura::HandleModCharm: %s has a charm aura but no charm info!", GetGUID().ToString().c_str());
                 }
                 break;
             case CHARM_TYPE_CONVERT:

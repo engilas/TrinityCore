@@ -3617,6 +3617,13 @@ void SpellMgr::LoadSpellInfoCorrections()
         spellInfo->Effects[EFFECT_0].ApplyAuraName = SPELL_AURA_DUMMY;
     });
 
+    // Demonic knowledge, Soul link
+    ApplySpellFix({ 35696, 25228 }, [](SpellInfo* spellInfo)
+    {
+        // apply aura on pet
+        spellInfo->Effects[EFFECT_0].Effect = SPELL_EFFECT_APPLY_AREA_AURA_PET;
+    });
+
     ApplySpellFix({
         27892, // To Anchor 1
         27928, // To Anchor 1
@@ -4699,6 +4706,12 @@ void SpellMgr::LoadSpellInfoCorrections()
     ApplySpellFix({ 24314 }, [](SpellInfo* spellInfo)
     {
         spellInfo->AuraInterruptFlags |= AURA_INTERRUPT_FLAG_CAST | AURA_INTERRUPT_FLAG_MOVE | AURA_INTERRUPT_FLAG_JUMP;
+    });
+
+    // Going Ape
+    ApplySpellFix({ 48332 }, [](SpellInfo* spellInfo)
+    {
+        spellInfo->AuraInterruptFlags &= ~AURA_INTERRUPT_FLAG_CHANGE_MAP;
     });
 
     //
