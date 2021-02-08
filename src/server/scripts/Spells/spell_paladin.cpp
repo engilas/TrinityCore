@@ -2000,7 +2000,7 @@ class spell_pal_sacred_shield_dummy : public SpellScriptLoader
                     cooldown = Seconds(bonus->GetAmount());
 
                 _cooldownEnd = now + cooldown;
-                caster->CastSpell(eventInfo.GetActionTarget(), SPELL_PALADIN_SACRED_SHIELD_TRIGGER, aurEff);
+                caster->AddAura(SPELL_PALADIN_SACRED_SHIELD_TRIGGER, eventInfo.GetActionTarget());
             }
 
             void Register() override
