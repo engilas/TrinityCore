@@ -8,7 +8,9 @@ INSERT INTO spell_area(spell, area, quest_start, quest_end, aura_spell, racemask
 # Добавить скрипты
 
 # обезьяна
-INSERT INTO spell_script_names(spell_id, ScriptName) VALUES (48332, 'spell_gen_going_ape');
+INSERT INTO spell_script_names(spell_id, ScriptName) VALUES 
+    (48332, 'spell_gen_going_ape'),
+    (48333, 'spell_gen_going_ape');
 
 # Варлок
 INSERT INTO spell_script_names(spell_id, ScriptName) VALUES 
